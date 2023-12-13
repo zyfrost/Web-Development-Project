@@ -13,3 +13,13 @@ git push origin head
 6.merge the pull request
 7.release
 create a new release
+
+++double Jump 
+
+add player head near their health
+name hover over enemy
+make it multiplayer
+
+https://realtechprep.com/
+https://www.youtube.com/watch?v=QwUZxCBtfLw - facechat functionality
+

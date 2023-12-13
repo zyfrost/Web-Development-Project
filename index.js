@@ -7,67 +7,33 @@ canvas.height = 576;
 c.fillRect(0, 0, canvas.width, canvas.height);
 const gravity = 0.5;
 //position - position of object and velocity takes in account the speed
-class Sprite {
-  constructor({ position, velocity, color = "red", offset }) {
-    this.position = position;
-    this.velocity = velocity;
-    this.height = 150;
-    this.width = 50;
-    this.lastKey;
-    this.attackBox = {
-      position: {
-        x: this.position.x,
-        y: this.position.y,
-      },
-      offset,
-      width: 100,
-      height: 50,
-    };
-    this.color = color;
-    this.isAttacking;
-    this.health = 100;
-  }
-  draw() {
-    c.fillStyle = this.color;
-    c.fillRect(this.position.x, this.position.y, this.width, this.height);
-    if (player.isAttacking) {
-      c.fillStyle = "green";
-      c.fillRect(
-        this.attackBox.position.x,
-        this.attackBox.position.y,
-        this.attackBox.width,
-        this.attackBox.height
-      );
-    } else if (enemy.isAttacking) {
-      c.fillStyle = "green";
-      c.fillRect(
-        this.attackBox.position.x,
-        this.attackBox.position.y,
-        this.attackBox.width,
-        this.attackBox.height
-      );
-    }
-  }
-  update() {
-    this.draw();
-    this.attackBox.position.x = this.position.x + this.attackBox.offset.x;
-    this.attackBox.position.y = this.position.y;
+const background = new Sprite({
+  position: {
+    x: 0,
+    y: 0,
+  },
+  imageSrc: "./img/background.jpg",
+});
 
-    this.position.x += this.velocity.x;
-    this.position.y += this.velocity.y;
-    if (this.position.y + this.height + this.velocity.y >= canvas.height) {
-      this.velocity.y = 0;
-    } else this.velocity.y += gravity;
-  }
-  attack() {
-    this.isAttacking = true;
-    setTimeout(() => {
-      this.isAttacking = false;
-    }, 100);
-  }
-}
+const column = new Sprite({
+  position: {
+    x: -20,
+    y: 0,
+  },
+  imageSrc: "./img/cols.png",
+  scale: 1.25,
+});
+const pipes = new Sprite({
+  position: {
+    x: -10,
+    y: -50,
+  },
+  imageSrc: "./img/pipes.png",
+  scale: 1.15,
+});
+
 //player Structure
-const player = new Sprite({
+const player = new Fighter({
   position: {
     x: 0,
     y: 0,
@@ -80,10 +46,13 @@ const player = new Sprite({
     x: 0,
     y: 0,
   },
+  imageSrc: "./img/hero/Idle.png",
+  framesMax: 11,
+  scale: 5,
 });
 
 //ene my Structure
-const enemy = new Sprite({
+const enemy = new Fighter({
   position: {
     x: 400,
     y: 100,
@@ -114,46 +83,22 @@ const keys = {
   },
 };
 
+function determineWinner({ player, enemy, timerId }) {
+  clearTimeout(timerId);
+  document.querySelector("#displayText").style.display = "flex";
+  if (player.health === enemy.health) {
+    console.log("tie");
+    document.querySelector("#displayText").innerHTML = "Tie";
+  } else if (player.health > enemy.health) {
+    document.querySelector("#displayText").innerHTML = "Player 1 Wins";
+  } else if (enemy.health > player.health) {
+    document.querySelector("#displayText").innerHTML = "Player 2 Wins";
+  }
+}
 let playerJumps = 0;
 let enemyJumps = 0;
 
 const maxJumps = 2;
-// drawing the player and enemy as this will start when website loads but update will loop every tick
-// player.draw();
-// enemy.draw();
-
-console.log(player);
-
-function rectangleCollision({ rectangle1, rectangle2 }) {
-  return (
-    rectangle1.attackBox.position.x + rectangle1.attackBox.width >= rectangle2.position.x &&
-    rectangle1.attackBox.position.x <=
-      rectangle2.attackBox.position.x + rectangle2.attackBox.width &&
-    rectangle1.attackBox.position.y + rectangle1.attackBox.height >= rectangle2.position.y &&
-    rectangle1.attackBox.position.y <= rectangle2.attackBox.position.y + rectangle2.attackBox.height
-  );
-}
-
-// this is used to decrease timer
-let timer = 31;
-function decreaseTimer() {
-  if (timer > 0) {
-    timer--;
-    setTimeout(decreaseTimer, 1000);
-    document.querySelector("#timer").innerHTML = timer;
-  }
-  if (timer === 0) {
-    document.querySelector("#displayText").style.display = "flex";
-    if (player.health === enemy.health) {
-      console.log("tie");
-      document.querySelector("#displayText").innerHTML = "Tie";
-    } else if (player.health > enemy.health) {
-      document.querySelector("#displayText").innerHTML = "Player 1 Wins";
-    } else if (enemy.health > player.health ) {
-      document.querySelector("#displayText").innerHTML = "Player 2 Wins";
-    }
-  }
-}
 
 decreaseTimer();
 //this helps in animating object frame by frame
@@ -161,6 +106,9 @@ function animate() {
   window.requestAnimationFrame(animate);
   c.fillStyle = "black";
   c.fillRect(0, 0, canvas.width, canvas.height);
+  background.update();
+  pipes.update();
+  column.update();
   player.update();
   enemy.update();
 
@@ -200,6 +148,10 @@ function animate() {
     document.querySelector("#playerHealth").style.width = player.health + "%";
     console.log("enemy hit");
   }
+
+  if (enemy.health <= 0 || player.health <= 0) {
+    determineWinner({ player, enemy, timerId });
+  }
 }
 animate();
 
@@ -213,12 +165,6 @@ window.addEventListener("keydown", (event) => {
       keys.a.pressed = true;
       player.lastKey = "a";
       break;
-    case "w":
-      if (playerJumps < maxJumps) {
-        player.velocity.y = -16;
-        playerJumps++;
-      }
-      break;
     case " ":
       player.attack();
       break;
@@ -230,12 +176,18 @@ window.addEventListener("keydown", (event) => {
       keys.ArrowLeft.pressed = true;
       enemy.lastKey = "ArrowLeft";
       break;
+    case "w":
+      if (player.position.y + player.height >= canvas.height - 90) {
+        player.velocity.y = -16;
+        playerJumps++;
+      }
+      break;
     case "ArrowUp":
-      if (enemyJumps < maxJumps) {
+      if (enemy.position.y + enemy.height >= canvas.height - 90) {
         enemy.velocity.y = -16;
         enemyJumps++;
       }
-      break;
+      break;  s
     case "ArrowDown":
       enemy.attack();
       break;
