@@ -1,0 +1,25 @@
+1. clone the repo
+git clone url
+2.create branch 
+git branch
+git branch -m "name of branch"
+git branch
+3.develop & push
+git add .
+git commit -m "message"
+git push origin head
+4.Pull request
+5.code review 
+6.merge the pull request
+7.release
+create a new release
+
+++double Jump 
+
+add player head near their health
+name hover over enemy
+make it multiplayer
+
+https://realtechprep.com/
+https://www.youtube.com/watch?v=QwUZxCBtfLw - facechat functionality
+
